@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+		<script type="text/javascript" src="js/ajax.js"></script>
+		<script type="text/javascript" src="js/REM布局.js"></script>
+		<link rel="stylesheet" type="text/css" href="css/index.css"/>
+	</head>
+	<body>
+		<div class="page start"><button class="startBtn">开始答题</button></div>
+		<div class="page gaming">
+			<div class="header">
+				<div class="left">倒计时：<span class="timing"></span></div>
+				<div class="right">答对： <span class="score">0</span> 题</div>
+			</div>
+			<div class="quiz"></div>
+			<div class="main"></div>
+		</div>
+		<div class="page end">
+			<button class="restart">重新开始</button>
+		</div>
+		
+		<script type="text/javascript">
+			var startBtn = document.querySelector('.startBtn')
+			var startPage = document.querySelector('.start')
+			var gamingPage = document.querySelector('.gaming')
+			var endPage = document.querySelector('.end')
+			var quiz = document.querySelector('.quiz')
+			var main = document.querySelector('.main')
+			var restartBtn  = document.querySelector('.restart')
+			var scoreNum = document.querySelector('.score')
+			var timing = document.querySelector('.timing')
+			var clockId
+			var curItem
+			var timuList = null
+			var score = 0 
+			
+			startBtn.onclick = function(){
+				startPage.style.zIndex = 0
+				gamingPage.style.zIndex = 10
+				renderTimu()
+			}
+			
+			ajax('js/dati.json',function(xhr){
+				timuList = JSON.parse(xhr.responseText)
+				console.log(timuList)
+			})
+			
+			function clock(){
+				var clockNum = 10
+				timing.innerHTML = clockNum
+				clockId = setInterval(function(){
+					clockNum--
+					timing.innerHTML = clockNum
+					if(clockNum==0){
+						endGame()
+						clearInterval(clockId)
+					}
+				},1000)
+			}
+			
+			function renderTimu(){
+				var Num = parseInt(Math.random()*timuList.length)
+				var del = timuList.splice(Num,1)
+				clock()
+				curItem = del[0]
+				quiz.innerHTML = curItem.quiz
+				main.innerHTML = ''
+				curItem.options.forEach(function(item,index){
+					var newDiv = document.createElement('div')
+					newDiv.className = 'optionItem'
+					newDiv.innerHTML = item
+					newDiv.dataset.index = index
+					main.appendChild(newDiv)					
+				})
+			}
+			main.addEventListener('click',function(e){
+				if(e.target.className=='optionItem'){
+					if(e.target.dataset.index==(curItem.answer - 1)){
+						e.target.style.background = 'yellowgreen'
+						score++
+						scoreNum.innerHTML = score
+						localStorage.score = localStorage.score>score?localStorage.score:score
+						clearInterval(clockId)
+						setTimeout(function(){
+							renderTimu()
+						},500)
+						
+					}else{
+						e.target.style.background = 'deeppink'
+						setTimeout(function(){
+							endGame()
+							clearInterval(clockId)
+						},500)
+						
+					}
+				}
+			})
+			function endGame(){
+				endPage.style.zIndex = 10
+				gamingPage.style.zIndex = 0
+				var newH1 = document.createElement('h1')
+				newH1.innerHTML = '恭喜你答对'+score+'题'
+				var newH2 = document.createElement('h2')	
+				newH2.innerHTML = '历史最高纪录是'+localStorage.score+'题'
+				newH2.style.margin = '0.5rem 0'
+				endPage.insertBefore(newH1,restartBtn)
+				endPage.insertBefore(newH2,restartBtn)
+			}
+			
+			restartBtn.onclick = function(){
+				location.reload()
+			}
+		</script>
+	</body>
+</html>
